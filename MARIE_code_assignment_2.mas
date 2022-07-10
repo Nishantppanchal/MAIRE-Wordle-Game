@@ -1,0 +1,969 @@
+﻿// Template for assignment 2
+//
+// Your assignment submission needs to be based on this template.
+//
+// Carefully read the instructions.
+//
+// You need to complete the subroutines and the test cases below.
+//
+// Make sure all code is your own, and don't share any code
+// or code fragments with other students.
+
+
+/ Execute all the test cases
+/ (You can comment the next line if you don't want to
+/ run the test cases)
+JnS TestAll
+
+/ Execute the main wordle game
+JnS Wordle
+
+/ Finish execution
+Halt
+
+////////////////////////////////
+/ Task 2.2: ToUpper subroutine
+////////////////////////////////
+
+/ ToUpper subroutine
+/   Expects the start address of a string that is to be converted to all 
+/   uppercase.
+/	Looping through every character in the stiring, it check if character 
+/ 	if lower case. If if is, then it will convert it to uppercase.
+/	It will go through the string until the a 0 is encountered, after 
+/	Which it will exit the subroutine.
+ToUpperWord, 		HEX 0 / Stores the address of character we are at
+ToUpper, 			HEX 0 / Stores the return address
+					/ Indirectly loads the HEX value the ASCII character we are on 
+            		/ in the string.
+            		/ This is where the loop starts.
+LoopStartToUpper,	LoadI ToUpperWord 
+            		/ If the loaded value is positive, skip the next line
+           		 	Skipcond 800
+            		/ If the loaded value is zero or negative , exit the subroutine
+            		JumpI ToUpper
+            		/ Substract the CheckerNumber from the loaded HEX.
+            		Subt CheckerNumber
+            		/ If the value from the calculation above is positive, meaning 
+            		/ the character we are on is lower case, skip the next line.
+            		Skipcond 800
+            		/ If the character is already upper case, then skip the code
+            		/ the convert the character to upper case if it was lower case.
+            		Jump IncrementToUpper
+           			/ Indirectly loads the HEX value the ASCII character we are on 
+            		/ in the string.
+            		LoadI ToUpperWord
+           			/ Substracts the ConverterNumber from the HEX of the ASCII 
+            		/ character we are on to get the HEX of it's upper case counter-
+            		/ part.
+            		Subt ConverterNumber
+            		/ The new HEX value for the upper case character in ASCII is
+            		/ stored in the same local as where the original lower case 
+            		/ character was stored.
+            		StoreI ToUpperWord
+            		/ Increments to the next character in the string.
+            		/ Loads the address for the current character.
+IncrementToUpper,	Load ToUpperWord 
+					/ Add one to the address value
+            		Add One
+            		/ Stores the address to ToUpperWord location in memory.
+            		/ This is the location where the address for the current 
+            		/ character we are on is stored.
+            		Store ToUpperWord
+            		/ Jumps back to the start of the loop
+            		Jump LoopStartToUpper
+
+///////////////////////////////////////
+/ Task 2.3: StringContains subroutine
+///////////////////////////////////////
+
+/ StringContains subroutine
+/   Expects the start address of the string we want the check and the HEX value
+/ 	of the ASCII character that we want check if it is in the string. 
+/	Looping through every character in the stiring, it check if character 
+/ 	is in the string. 
+/ 	If the character provided is in the string provided, StringContainsResult is
+/ 	set to 1.
+/ 	If the character provided is not in the string provided, StringContainsResult
+/ 	is set to 0.
+StringContainsStart, 		HEX 0 / Stores the address of the character we are on in the string.
+StringContainsChar, 		HEX 0 / Stores the HEX value of the ASCII character we want to check for.
+StringContainsResult, 		DEC 0 / Stores the output of the subroutine.
+StringContains, 			HEX 0 / Stores the return address
+							/ Indirectly loads the HEX value the ASCII character we are on 
+                            / in the string.
+                            / This is where the loop starts.
+LoopStartStringContains,	LoadI StringContainsStart
+							/ If the character has a HEX value of 0, skip the next line
+                            Skipcond 800
+                            / If the character has a HEX value of 0, jump to ExitWith0 to put 0 in 
+                            / StringContainsResult as the result exit the subroutine.
+                            Jump ExitWith0
+                            / Subtract the HEX value of the character we are searching for and the
+                            / character we are currently on in the string.
+                            / If they are the same, the result will be 0.
+                            Subt StringContainsChar
+                            / If the result of the calculation above is 0, skip the next line.
+                            Skipcond 400
+                            / If the result of the calculation above is not 0, jump to 
+                            / IncrementStringContains to contain the loop.
+                            Jump IncrementStringContains
+                            / Otherwise, jump to ExitWith1 to put 1 in StringContainsResult as 
+                            / the result exit the subroutine.
+                            Jump ExitWith1
+                            / Increments the StringContainsStart to the next address
+                            / Load the address of the character in the string we are currently on.
+IncrementStringContains, 	Load StringContainsStart
+							/ Add one to that address.
+							Add One
+                            / Store the new address at the address StringContainsStart.
+							Store StringContainsStart
+                            / Jumps to the start of the loop
+							Jump LoopStartStringContains
+
+							/ Exits subroutine after putting 0 in StringContainsResult.
+                            / Loads the value 0.
+ExitWith0, 					Load Zero
+							/ Stores the value 0 at address StringContainsResult.
+                            Store StringContainsResult
+                            / Exits the subtrountine by jumping to the return address.
+                            JumpI StringContains
+
+							/ Exits subroutine after putting 1 in StringContainsResult.
+                            / Loads the value 1.
+ExitWith1, 					Load One
+							/ Stores the value 1 at address StringContainsResult.
+                            Store StringContainsResult
+                            / Exits the subtrountine by jumping to the return address.
+                            JumpI StringContains
+
+///////////////////////////////////
+/ Task 2.4: CheckGuess subroutine
+///////////////////////////////////
+
+/ CheckGuess subroutine
+/   Expects guessed word string's start address and the selected word string's
+/ 	start address to output the output based on the selected word and the user
+/ 	input.
+/   Will go through all the characters in the user input (guessed word) checking 
+/ 	if they are in the selected word. 
+/	If a character is not in the selected word, a _ is outputed in that position. 
+/	If a character is in the selected word, but not in the right position, a lower
+/ 	case version of that character is outputed.
+/	If a character is in the selected word in the right position, a upper case 
+/	version of that character is outputed
+CheckGuessedWord, 			HEX 0 / Stores the address the guessed word string we are at.
+CheckSelectedWord, 			HEX 0 / Stores the address the selected word string we are at.
+SelectedWordStart, 			HEX 0 / Stores the starting address of the selected word string.
+Temp, 						HEX 0 / Temporary storage for values
+CheckGuess, 				HEX 0 / Stores the return address
+                            / Loads the address for the character we are currently at, which
+                            / would be the address for the start of the selected word string.
+                            Load CheckSelectedWord
+                            / Store this value at the address SelectedWordStart.
+                            Store SelectedWordStart
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the guessed word string.
+                            / This is where the loop starts.
+LoopCheckGuess, 			LoadI CheckGuessedWord
+                            / If the chracter is not 0, skip the next line.
+                            Skipcond 800
+                            / If the character has a HEX value of 0, jump to CheckSelectedWordFor0
+                            / to check if the character we are on in selected word string has a 
+                            / HEX value of 0.
+                            Jump CheckSelectedWordFor0
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the selected word string.
+                            LoadI CheckSelectedWord 
+                            / If the character is not 0, skip the next line
+                            Skipcond 800
+                            / If the character is 0, print a error message saying:
+                            / “Your word is too long”. We don't need to check if the character
+                            / we are on for the guessed word string is 0 or not as if it was, 
+                            / the code would have jumped to CheckSelectedWordFor0.
+                            Jump PrintErrorTooLong
+                            / Store the current character from selected word string in
+                            / temporary storage
+                            Store Temp
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the guessed word string.
+                            LoadI CheckGuessedWord
+                            / Subtract the value hex value for the character we are currently 
+                            / on in the selected word string from the hex value of the character 
+                            / we are currently on in the guessed word string. 
+                            Subt Temp
+                            / If the two character from guessed word string and selected word
+                            / string are the same, the calculation above will result in 0. Hence
+                            / If it is zero, skip the next line
+                            Skipcond 400
+                            / If the two character from guessed word string and selected word
+                            / string are not the same, jump to NotSameChar.
+                            Jump NotSameChar
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the guessed word string.
+                            LoadI CheckGuessedWord
+                            / Out the character from the guessed word string that we are currently
+                            / on.
+                            Output
+                            / Increment the CheckGuessedWord and CheckSelectedWord to the next 
+                            / character in their respective strings.
+                            / Loads the address in CheckGuessedWord. 
+IncrementCheckGuess,		Load CheckGuessedWord
+                            / Adds on to that address.
+                            Add One
+                            / Stores the new address back at the address CheckGuessedWord.
+                            Store CheckGuessedWord
+                            / Loads the address in CheckSelectedWord. 
+                            Load CheckSelectedWord
+                            / Adds on to that address.
+                            Add One
+                            / Stores the new address back at the address CheckSelectedWord.
+                            Store CheckSelectedWord
+                            / Jumps to the start of the loop.
+                            Jump LoopCheckGuess
+							
+                            / Checks if the character we are currently on for the 
+                            / selected word string is also zero. If it not, the 
+                            / error message: “Your word is too short” is outputed.
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the selected word string.
+CheckSelectedWordFor0, 		LoadI CheckSelectedWord
+							/ If the character we are on in the selected word string is 0,
+                            / skip the next line.
+                            Skipcond 400
+                            / If the character is not 0, print the error message.
+                            Jump PrintErrorTooShort
+                            / Otherwise, jump to ExitSubroutineCheckGuess to exit the
+                            / subroutine.
+                            Jump ExitSubroutineCheckGuess
+                        
+                        	/ Print the error message: “Your word is too short”
+                            / Loads the starting address of the TooShortErroMsg string.
+PrintErrorTooShort, 		Load TooShortErrorMsgAdr
+							/ Jumps to PrintErrorMessage to print the error message
+							Jump PrintErrorMessage
+
+							/ Print the error message: “Your word is too long"
+                            / Loads the starting address of the TooLongErrorMsg string.
+PrintErrorTooLong, 			Load TooLongErrorMsgAdr
+							/ Jumps to PrintErrorMessage to print the error message
+							Jump PrintErrorMessage
+							                   
+				 			/ Print the error message which has it starting address loaded
+                            / into AC.
+                            / Stores this address at the address PrintFrom.
+PrintErrorMessage,          Store PrintFrom
+                            / Runs the PrintString subroutine.
+                            JnS PrintString
+                            / Jumps to the ExitSubroutineCheckGuess to exit the subroutine.
+                            Jump ExitSubroutineCheckGuess
+
+							/ Define what to do when the current character from the selected
+                            / word string and the guessed word string are not the same.
+                            / Loads the starting address of the selected word string.
+NotSameChar, 				Load SelectedWordStart
+							/ Stores this address at the address StringContainsStart.
+                            Store StringContainsStart
+                            / Indirectly loads the HEX value the ASCII character we are on 
+                            / in the guessed word string.
+                            LoadI CheckGuessedWord
+                            / Stores the HEX value at the address StringContainsChar.
+                            Store StringContainsChar
+                            / Runs the StringContains subroutine to check if the character
+                            / we are currently on in the guessed word is in the selected word.
+                            JnS StringContains
+                            / Loads the result of the StringContains subroutine.
+                            Load StringContainsResult
+                           	/ If the result is 1, skip the next line.
+                            Skipcond 800
+                            / If the result is not 1, jump to OutputUnderscore to print an 
+                            / underscore ("_").
+                            Jump OutputUnderscore
+                            / Otherwise, indirectly loads the HEX value the ASCII character we 
+                            / are on in the guessed word string.
+                            LoadI CheckGuessedWord
+                            / Add the ConverterNumber number to convert the upper case
+                            / character to lower case.
+                            Add ConverterNumber
+                            / Output this converted character.
+                            Output
+                            / Jump to IncrementCheckGuess to continue the loop from the point
+                            / where we increment on character forward for the selected word string
+                            / and guessed word string.
+                            Jump IncrementCheckGuess
+
+							/ Outputs a underscore.
+                            / Load the HEX value for the ASCII underscore character.
+OutputUnderscore, 			Load Underscore
+							/ Outputs the underscore
+							Output
+                            / Jump to IncrementCheckGuess to continue the loop from the point
+                            / where we increment on character forward for the selected word string
+                            / and guessed word string.
+                    		Jump IncrementCheckGuess
+
+							/ Exits the subroutine.
+                            / Prints a new line.
+ExitSubroutineCheckGuess,   JnS PrintNewLine
+                            / Returns to the specificed return address.
+							JumpI CheckGuess					
+
+/////////////////////////////////////////
+/ Task 2.5: Main Wordle game subroutine
+/////////////////////////////////////////
+
+/ Wordle subroutine
+/	Use the other subroutines to run the wordle game
+NumberOfGuesses, DEC 6 / The number of guesses the user left is defined to start with 6.
+Wordle, 		HEX 0 / Return address
+                / Loads the start address for the string: "Enter your guesses".
+                / Loop starts here
+LoopWordleStart,Load EnterYourGuessesStringAdr
+                / Store this address at the address PrintFrom.
+                Store PrintFrom
+                / Runs the PrintString subroutine.
+                JnS PrintString
+                / Prints a new line.
+                JnS PrintNewLine
+                / Loads the number of guesses the user has left.
+				Load NumberOfGuesses
+                / Substracts one from that number
+                Subt One
+                / Stores the new number at the address NumberOfGuesses.
+                Store NumberOfGuesses
+                / Gets the user input.
+                / Loads the start address for where the input is to be
+                / stored.
+                Load InputAdr
+                / Stores this address at the address InputTo.
+                Store InputTo
+                / Runs the InputString subroutine.
+                JnS InputString
+                / Converts all the characters in the input into uppercase.
+                / Loads the start address for the input.
+                Load InputAdr
+                / Stores this address at the address ToUpperWord.
+                Store ToUpperWord
+                / Runs the ToUpper subroutine.
+                JnS ToUpper
+                / Loads the start address for the input.
+                Load InputAdr
+                / Stores this address at the address CheckGuessedWord.
+                Store CheckGuessedWord
+                / Loads the start address of the word the user is trying to
+                / guess.
+                Load WordsAdr
+                / Stores this address at the address CheckSelectedWord.
+                Store CheckSelectedWord
+                / Runs the CheckGuess subroutine.
+                JnS CheckGuess
+                / Loads the number of guesses the user has.
+                Load NumberOfGuesses
+                / If the number of guesses left is 0, then skip the next line.
+                Skipcond 400
+                / If the number of guesses left is not 0, then jump to the start 
+                / of the loop.
+                Jump LoopWordleStart
+                / Load the address of the string: "The game ended"
+                Load TheGameEndedStringAdr
+                / Store this address in the address PrintFrom
+                Store PrintFrom
+                / Runs the PrintString subroutine
+                JnS PrintString
+                / Otherwise, exit the subroutine by jumping to the return address.
+            	JumpI Wordle 
+
+/ Task 2.1: Your name as a string
+/ String is: Nishant Panchal
+Name,  	HEX 4e / Start of string
+		HEX 69
+        HEX 73
+        HEX 68
+        HEX 61
+        HEX 6e
+        HEX 74
+        HEX 50
+        HEX 61
+        HEX 6e
+        HEX 63
+        HEX 68
+        HEX 61
+        HEX 6c
+        HEX 0 / End of string
+
+//////////////////////
+/ Strings and values
+//////////////////////
+            
+/ This is the HEX number we need to convert ASCII character from lower case to 
+/ upper case and vice versa. This is because the HEX for the upper case version
+/ of a character minus the HEX for the lower case version of a character in
+/ ASCII is HEX 20.
+/ Convert lower case to upper case: substract ConverterNumber.
+/ Convert upper case to lower case: add ConverterNumber.
+ConverterNumber, HEX 20 
+
+/ This is the HEX number that is one above the HEX number for the upper case 
+/ character with the largest HEX (Z). This means that if we minus this number
+/ from the HEX of a character, the result will be negative if it a upper case 
+/ character and positive if it is a lower case character.
+CheckerNumber, HEX 5b
+
+/ Stores the decimal value zero.
+Zero, DEC 0
+
+/ Store the HEX values for the ASCII underscore character.
+Underscore, HEX 5f
+
+/ Stores the start address for the TooShortErrorMsg string. 
+TooShortErrorMsgAdr, 		Adr TooShortErrorMsg
+/ HEX values for the ASCII string: “Your word is too short”.
+TooShortErrorMsg,	HEX 59 / Start of string
+                    HEX 6f 
+                    HEX 75 
+                    HEX 72 
+                    HEX 20
+                    HEX 77
+                    HEX 6f
+                    HEX 72
+                    HEX 64
+                    HEX 20
+                    HEX 69
+                    HEX 73
+                    HEX 20
+                    HEX 74
+                    HEX 6f
+                    HEX 6f
+                    HEX 20
+                    HEX 73
+                    HEX 68
+                    HEX 6f
+                    HEX 72
+                    HEX 74
+                    HEX 0 / End of string
+
+/ Stores the start address for the TooLongErrorMsg string. 
+TooLongErrorMsgAdr, Adr TooLongErrorMsg  
+/ HEX values for the ASCII string: “Your word is too long”.
+TooLongErrorMsg,	HEX 59 / Start of string 
+					HEX 6f
+                    HEX 75
+                    HEX 72
+                    HEX 20
+                    HEX 77
+                    HEX 6f
+                    HEX 72
+                    HEX 64
+                    HEX 20
+                    HEX 69
+                    HEX 73
+                    HEX 20
+                    HEX 74
+                    HEX 6f
+                    HEX 6f
+                    HEX 20
+                    HEX 6c
+                    HEX 6f
+                    HEX 6e
+                    HEX 67
+                    HEX 0 / End of string
+
+/ Stores the start address for the EnterYourGuessesString string. 
+EnterYourGuessesStringAdr, Adr EnterYourGuessesString
+/ HEX values for the ASCII string: “Enter your guesses”.
+EnterYourGuessesString, HEX 45 / Start of string 
+						HEX 6e 
+                        HEX 74 
+                        HEX 65 
+                        HEX 72 
+                        HEX 20 
+                        HEX 79 
+                        HEX 6f 
+                        HEX 75 
+                        HEX 72 
+                        HEX 20 
+                        HEX 67 
+                        HEX 75 
+                        HEX 65 
+                        HEX 73 
+                        HEX 73 
+                        HEX 65 
+                        HEX 73 
+                        HEX 0 / End of string
+
+/ Stores the start address for the EnterYourGuessesString string. 
+TheGameEndedStringAdr, Adr TheGameEndedString
+/ HEX values for the ASCII string: “Enter your guesses”.
+TheGameEndedString,	HEX 54 / Start of string 
+					HEX 68 
+                    HEX 65 
+                    HEX 20 
+                    HEX 67 
+                    HEX 61 
+                    HEX 6D 
+                    HEX 65 
+                    HEX 20 
+                    HEX 65 
+                    HEX 6E 
+                    HEX 64 
+                    HEX 65 
+                    HEX 64
+                    HEX	0 / End of string
+
+//////////////////////
+/ Custom Subroutines
+//////////////////////
+
+/ PrintNewLine subroutine
+/	Prints new line in output log.
+/ 	Custom subroutine.
+PrintNewLine, 	HEX 0 / Return address
+ 				/ Loads the HEX value for the new line ASCII character
+				Load NewLine
+                / Outputs this character
+                Output
+                / Jumps to the return address exiting the subroutine
+                JumpI PrintNewLine
+
+				/ The HEX value for the ACSII character for a new line 
+NewLine, 		HEX 0A
+
+//////////////////////////
+/ Pre-defined Subroutines
+//////////////////////////
+
+/ InputString subroutine
+/   Expects the starting address of an area in memory
+/   where the string can be stored in argument InputTo.
+/   Requests a string character by character from the user.
+/   When the user enters value 0 (not the character "0" but
+/   the integer 0), the input is finished and the
+/   subroutine returns.
+/   Careful: the subroutine will overwrite any memory
+/     starting from the InputTo address.
+
+InputTo,        HEX 0               / Start address where to store the string
+InputString,    HEX 0               / Return address placeholder
+InputLoop,      Input
+                StoreI InputTo
+                Skipcond 800
+                JumpI InputString   / Return if entered value is 0
+                Load InputTo
+                Add One
+                Store InputTo
+                Jump InputLoop
+
+
+/ PrintString subroutine
+/    Expects the start address of a string to be printed
+/    in argument PrintFrom.
+/    Will print the string character by character until
+/    a 0 is encountered, and then return.
+
+PrintFrom,	    HEX 0				/ Address to start printing from
+PrintString,    HEX 0 				/ Return address placeholder
+PrintLoop,      LoadI PrintFrom
+			    Skipcond 800
+                JumpI PrintString   / Return if character is 0
+                Output
+                Load PrintFrom
+                Add One
+                Store PrintFrom
+                Jump PrintLoop
+
+One, Dec 1
+
+/////////////////
+/ Test cases
+/////////////////
+
+/ Each test case is a subroutine that requires no arguments.
+/ The TestAll subroutine calls all the test cases in a row.
+/ Add your own test cases as subroutines, and add the necessary
+/ calls to the TestAll subroutine.
+/ You can then execute individual test cases by calling them
+/ (at the top of the file), or execute all of them by calling
+/ TestAll (see top of the file).
+
+TestAll,HEX 0 / Return address
+		/ Test cases for ToUpper
+        JnS TestToUpper1        / Run first test case
+        JnS TestToUpper2		/ Run second test case
+		JnS TestToUpper3		/ Run third test case
+        JnS TestToUpper4		/ Run fourth test case
+        / Test cases for StringContains
+        JnS TestStringContains1 / Run first test case
+        JnS TestStringContains2	/ Run second test case
+        JnS TestStringContains3	/ Run third test case
+        JnS TestStringContains4	/ Run fourth test case
+        JnS TestStringContains5	/ Run fifth test case
+        /Test cases for CheckGuess
+        JnS TestCheckGuess1		/ Run first test case
+        JnS TestCheckGuess2		/ Run second test case
+		JnS TestCheckGuess3		/ Run third test case
+        JnS TestCheckGuess4		/ Run fourth test case
+		JnS TestCheckGuess5		/ Run fifth test case
+		JnS TestCheckGuess6		/ Run sixth test case
+        JumpI TestAll / Return
+
+/ Test cases for toUpper subroutine
+/ 	Test case 1 for ToUpper
+/ 	Expected output: your name in upper case
+NameAdr, ADR Name
+TestToUpper1,	HEX 0 / Return address
+           		Load NameAdr
+           		Store ToUpperWord
+           		JnS ToUpper
+           		Load NameAdr
+           		Store PrintFrom
+           		Jns PrintString
+                / Outputs new line
+                JnS PrintNewLine
+           		JumpI TestToUpper1
+/	Test case 2 for ToUpper
+/	Tests whether the subroutine can handle no input
+/ 	Expected output:  (literally nothing, there should just be an empty line).
+TestToUpper2StringAdr, Adr TestToUpper2String
+/ Input is empty
+TestToUpper2String, HEX 0 / End of string
+TestToUpper2, 	HEX 0 / Return address
+           		Load TestToUpper2StringAdr
+           		Store ToUpperWord
+           		JnS ToUpper
+           		Load TestToUpper2StringAdr
+           		Store PrintFrom
+           		Jns PrintString
+                / Outputs new line
+                JnS PrintNewLine
+           		JumpI TestToUpper2
+/	Test case 3 for ToUpper
+/	Tests whether the subroutine can handle an all uppercase input.
+/ 	Expected output: UPPER
+TestToUpper3StringAdr, Adr TestToUpper3String
+/ Intput is UPPER
+TestToUpper3String, HEX 55
+					HEX 50
+                    HEX 50
+                    HEX 45
+                    HEX 52
+                    HEX 0 /End of string
+TestToUpper3, 	HEX 0 / Return address
+           		Load TestToUpper3StringAdr
+           		Store ToUpperWord
+           		JnS ToUpper
+           		Load TestToUpper3StringAdr
+           		Store PrintFrom
+           		Jns PrintString
+                / Outputs new line
+                JnS PrintNewLine
+           		JumpI TestToUpper3
+/	Test case 4 for ToUpper
+/	Tests whether the subroutine can handle an all lowercase input.
+/ 	Expected output: LOWER
+TestToUpper4StringAdr, Adr TestToUpper4String
+/ Input is lower
+TestToUpper4String, HEX 6C
+					HEX 6F
+                    HEX 77
+                    HEX 65
+                    HEX 72 
+                    HEX 0 / End of string
+TestToUpper4, 	HEX 0 / Return address
+           		Load TestToUpper4StringAdr
+           		Store ToUpperWord
+           		JnS ToUpper
+           		Load TestToUpper4StringAdr
+           		Store PrintFrom
+           		Jns PrintString
+                / Outputs new line
+                JnS PrintNewLine
+           		JumpI TestToUpper4
+
+/ Test cases for StringContains subroutine
+
+/	DecimalToASCII subroutine
+/		This subroutine expect either decimal 0 or decimal 1 as an input.
+/ 		The decimal 0 or decimal 1 is converted to the ASCII 0 and 1. 
+/ 		This allows the output of subroutine that output decimal 0 and
+/ 		decimal 1 to be read by the user when the output mode is unicode
+/ 		mode.
+/ 		The means the user doesn't have to switch to output mode decimal
+/		to see the result of the StringContains subroutine.
+DecimalInput, DEC 0
+DecimalToASCII, HEX 0
+				Load DecimalInput
+				Skipcond 400
+                Load ASCIIOne
+                Skipcond 800
+                Load ACSIIZero
+                Output
+                JumpI DecimalToASCII	
+ACSIIZero, 	HEX 30 / ACSII HEX value for 0
+ASCIIOne, 	HEX 31 / ACSII HEX value for 1
+/ 	Test case 1 for StringContains
+/ 	Expected output: 1 if your name contains the letter F, 0 otherwise
+TestStringContains1Char, HEX 46
+TestStringContains1, HEX 0 / Return address
+                     Load NameAdr
+                     Store StringContainsStart
+                     Load TestStringContains1Char
+                     Store StringContainsChar
+                     JnS StringContains
+                     Load StringContainsResult
+                     Store DecimalInput
+                     / Converts the decimal 0 and 1 to ASCII
+                     JnS DecimalToASCII
+                     JnS PrintNewLine
+                     JumpI TestStringContains1 / Return
+/ 	Test case 2 for StringContains
+/ 	Tests if the subroutine can handle inputs where the character is
+/ 	not in the string at all.
+/ 	Expected output: 0
+TestStringContains2Char, HEX 46
+TestStringContains2, HEX 0 / Return address
+                     Load TestStringContains2StringAdr
+                     Store StringContainsStart
+                     Load TestStringContains2Char
+                     Store StringContainsChar
+                     JnS StringContains
+                     Load StringContainsResult
+                     Store DecimalInput
+                     / Converts the decimal 0 and 1 to ASCII
+                     JnS DecimalToASCII
+                     JnS PrintNewLine
+                     JumpI TestStringContains2 / Return
+TestStringContains2StringAdr, Adr TestStringContains2String
+TestStringContains2String, 	HEX 54
+							HEX 65
+                            HEX 73
+                            HEX 74
+                            HEX 32
+                            HEX 0 / End of string
+/ 	Test case 3 for StringContains
+/ 	Tests if the subroutine can handle inputs where the all the characters
+/ 	in the string are the character we are searching for.
+/ 	Expected output: 0
+TestStringContains3Char, HEX 4c
+TestStringContains3, HEX 0 / Return address
+                     Load TestStringContains3StringAdr
+                     Store StringContainsStart
+                     Load TestStringContains3Char
+                     Store StringContainsChar
+                     JnS StringContains
+                     Load StringContainsResult
+                     Store DecimalInput
+                     / Converts the decimal 0 and 1 to ASCII
+                     JnS DecimalToASCII
+                     JnS PrintNewLine
+                     JumpI TestStringContains3 / Return
+TestStringContains3StringAdr, Adr TestStringContains2String
+TestStringContains3String, 	HEX 4c
+							HEX 4c
+                            HEX 4c
+                            HEX 4c
+                            HEX 4c
+                            HEX 0 / End of string
+/ 	Test case 4 for StringContains
+/ 	Tests if the subroutine can handle inputs where the string in empty
+/ 	in the string are the character we are searching for.
+/ 	Expected output: 0
+TestStringContains4Char, HEX 4b
+TestStringContains4, HEX 0 / Return address
+                     Load TestStringContains4StringAdr
+                     Store StringContainsStart
+                     Load TestStringContains4Char
+                     Store StringContainsChar
+                     JnS StringContains
+                     Load StringContainsResult
+                     Store DecimalInput
+                     / Converts the decimal 0 and 1 to ASCII
+                     JnS DecimalToASCII
+                     JnS PrintNewLine
+                     JumpI TestStringContains4 / Return
+TestStringContains4StringAdr, Adr TestStringContains4String
+TestStringContains4String, 	HEX 0 / End of string
+/ 	Test case 5 for StringContains
+/ 	Tests if the subroutine can find a character in a 5 character input
+/ 	in the string are the character we are searching for.
+/ 	Expected output: 1
+TestStringContains5Char, HEX 61
+TestStringContains5, HEX 0 / Return address
+                     Load TestStringContains5StringAdr
+                     Store StringContainsStart
+                     Load TestStringContains5Char
+                     Store StringContainsChar
+                     JnS StringContains
+                     Load StringContainsResult
+                     Store DecimalInput
+                     / Converts the decimal 0 and 1 to ASCII
+                     JnS DecimalToASCII
+                     JnS PrintNewLine
+                     JumpI TestStringContains5 / Return
+TestStringContains5StringAdr, Adr TestStringContains5String
+TestStringContains5String, 	HEX 74
+							HEX 68
+                            HEX 61
+                            HEX 74
+                            HEX 73
+							HEX 0 / End of string
+
+/ Test cases for CheckGuess subroutine
+GreatAdr, ADR Great
+Great, HEX 47
+       HEX 52
+       HEX 45
+       HEX 41
+       HEX 54
+       HEX 0
+
+WordsAdr, ADR Words
+Words, HEX 57
+       HEX 4F
+       HEX 52
+       HEX 44
+       HEX 53
+       HEX 0
+
+SelectedWord, Adr Words
+
+/ 	Test case 1 for CheckGuess
+/ 	Expected output: _r___
+TestCheckGuess1, HEX 0 / Return address
+                 Load GreatAdr
+                 Store CheckGuessedWord
+                 Load WordsAdr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess1 / Return        
+/ 	Test case 2
+/ 	Test for inputs where none of the characters in the guessed word are
+/ 	in the selected word.
+/ 	Expected output: _____
+TestCheckGuess2, HEX 0 / Return address
+                 Load GuessedWord2Adr
+                 Store CheckGuessedWord
+                 Load SelectedWord2Adr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess2 / Return   
+GuessedWord2Adr, Adr GuessedWord2
+GuessedWord2, 	HEX 54
+				HEX 45
+                HEX 58
+                HEX 54
+                HEX 47
+                HEX 0 / End of string
+SelectedWord2Adr, Adr SelectedWord2
+SelectedWord2, 	HEX 4D
+				HEX 4F
+                HEX 4F
+                HEX 44
+                HEX 53
+                HEX 0 / End of string
+/ 	Test case 3
+/ 	Test for inputs where the guessed word is longer than the selected 
+/ 	word.
+/ 	Expected output: ___Your word is too long
+TestCheckGuess3, HEX 0 / Return address
+                 Load GuessedWord3Adr
+                 Store CheckGuessedWord
+                 Load SelectedWord3Adr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess3 / Return   
+GuessedWord3Adr, Adr GuessedWord3
+GuessedWord3, 	HEX 4D
+				HEX 49
+                HEX 53
+                HEX 53
+                HEX 49
+                HEX 4C
+                HEX 45
+                HEX 0 / End of string
+SelectedWord3Adr, Adr SelectedWord3
+SelectedWord3, 	HEX 43
+				HEX 11
+                HEX 52
+                HEX 0 / End of string
+/ 	Test case 4
+/ 	Test for inputs where the guessed word is shorter than the selected 
+/ 	word.
+/ 	Expected output: _O_Your word is too short
+TestCheckGuess4, HEX 0 / Return address
+                 Load GuessedWord4Adr
+                 Store CheckGuessedWord
+                 Load SelectedWord4Adr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess4 / Return   
+GuessedWord4Adr, Adr GuessedWord4
+GuessedWord4, 	HEX 44
+				HEX 4F
+                HEX 47
+                HEX 0 / End of string
+SelectedWord4Adr, Adr SelectedWord4
+SelectedWord4, 	HEX 43
+				HEX 4F
+                HEX 4D
+                HEX 50
+                HEX 55
+                HEX 54
+                HEX 45
+                HEX 52
+                HEX 0 / End of string
+/ 	Test case 5
+/ 	Test for inputs where the guessed word is the same as the selected 
+/ 	word.
+/ 	Expected output: SAME
+TestCheckGuess5, HEX 0 / Return address
+                 Load GuessedWord5Adr
+                 Store CheckGuessedWord
+                 Load SelectedWord5Adr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess5 / Return   
+GuessedWord5Adr, Adr GuessedWord5
+GuessedWord5, 	HEX 53
+				HEX 41
+                HEX 4D
+                HEX 45
+                HEX 0 / End of string
+SelectedWord5Adr, Adr SelectedWord5
+SelectedWord5, 	HEX 53
+				HEX 41
+                HEX 4D
+                HEX 45
+                HEX 0 / End of string
+/ 	Test case 6
+/ 	Test for inputs where the guessed word has all the characters that
+/ 	the selected word has, but in the wrong order.
+/ 	Expected output: maire
+TestCheckGuess6, HEX 0 / Return address
+                 Load GuessedWord6Adr
+                 Store CheckGuessedWord
+                 Load SelectedWord6Adr
+                 Store CheckSelectedWord
+                 JnS CheckGuess
+                 JumpI TestCheckGuess6 / Return   
+GuessedWord6Adr, Adr GuessedWord6
+GuessedWord6, 	HEX 4D
+				HEX 41
+                HEX 52
+                HEX 49
+                HEX 45
+                HEX 0 / End of string
+SelectedWord6Adr, Adr SelectedWord6
+SelectedWord6, 	HEX 41
+				HEX 49
+                HEX 4D
+                HEX 45
+                HEX 52
+                HEX 0 / End of string
+
+/////////////////
+/ Input Storage
+/////////////////
+
+/ Purposefully placed at the end to prevent memory overwrite
+InputAdr, Adr Input
+Input, HEX 0
